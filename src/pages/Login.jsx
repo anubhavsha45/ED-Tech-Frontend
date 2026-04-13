@@ -1,36 +1,134 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import API from "../api/axios";
 
-export default function Login() {
+const Login = () => {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [role, setRole] = useState("student");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await API.post("/users/login", {
+        email: form.email,
+        password: form.password,
+      });
+
+      const { token, role } = res.data.data.user;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
+
+      // redirect based on role
+      if (role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (role === "teacher") {
+        navigate("/teacher/dashboard");
+      } else {
+        navigate("/student/dashboard");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="bg-[#0B0F19] min-h-screen flex items-center justify-center px-4 text-white">
-      <div className="bg-[#121826] p-6 md:p-8 rounded-xl w-full max-w-md border border-gray-800">
-        <h2 className="text-xl md:text-2xl font-bold mb-6 text-center">
-          Login
+    <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-[#111827] p-8 rounded-2xl shadow-lg border border-gray-800">
+        {/* TITLE */}
+        <h2 className="text-2xl font-bold text-white text-center mb-6">
+          Login to Learnify AI
         </h2>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full p-3 mb-4 bg-[#0B0F19] border border-gray-700 rounded"
-        />
+        {/* ERROR */}
+        {error && (
+          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+        )}
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full p-3 mb-6 bg-[#0B0F19] border border-gray-700 rounded"
-        />
+        {/* FORM */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          {/* ROLE SELECT */}
+          <div>
+            <label className="text-gray-400 text-sm">Login As</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full mt-1 p-3 rounded-lg bg-[#0B0F19] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
 
-        <button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 py-3 rounded-lg">
-          Login
-        </button>
+          {/* EMAIL */}
+          <div>
+            <label className="text-gray-400 text-sm">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              placeholder="Enter your email"
+              className="w-full mt-1 p-3 rounded-lg bg-[#0B0F19] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-        <p className="text-gray-400 mt-4 text-center text-sm">
+          {/* PASSWORD */}
+          <div>
+            <label className="text-gray-400 text-sm">Password</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              placeholder="Enter your password"
+              className="w-full mt-1 p-3 rounded-lg bg-[#0B0F19] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold hover:opacity-90 transition"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        {/* FOOTER */}
+        <p className="text-gray-400 text-sm text-center mt-6">
           Don’t have an account?{" "}
-          <Link to="/signup" className="text-blue-400">
-            Signup
-          </Link>
+          <span
+            className="text-blue-400 cursor-pointer hover:underline"
+            onClick={() => navigate("/signup")}
+          >
+            Sign up
+          </span>
         </p>
       </div>
     </div>
   );
-}
+};
+
+export default Login;
